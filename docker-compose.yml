@@ -1,0 +1,94 @@
+version: '3.6'
+
+services:
+  base: &base
+    build:
+      context: .
+    tty: true
+    stdin_open: true
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./:/var/www/code_fund_ads
+      - /var/www/code_fund_ads/tmp/
+      - bundle:/usr/local/bundle
+
+  # App container
+  app:
+    <<: *base
+    container_name: 'code_fund_ads-app'
+    image: code_fund_ads_base:latest
+    command: dockerize -wait http://bundler:23480 -wait http://yarn:23480 -timeout ${DEPENDENCY_TIMEOUT} bin/docker/start_development_web_server
+    ports:
+      - '3000:3000'
+
+  # Test container
+  test:
+    <<: *base
+    container_name: 'code_fund_ads-test'
+    image: code_fund_ads_base:latest
+    command: dockerize -wait http://bundler:23480 -wait http://yarn:23480 -timeout ${DEPENDENCY_TIMEOUT} bin/docker/setup_test_env
+    environment:
+      - NODE_ENV=test
+      - RAILS_ENV=test
+
+  # Sidekiq container
+  sidekiq:
+    <<: *base
+    container_name: 'code_fund_ads-sidekiq'
+    image: code_fund_ads_base:latest
+    command: dockerize -wait http://bundler:23480 -timeout ${DEPENDENCY_TIMEOUT} bin/docker/start_sidekiq
+
+  # Webpack container
+  webpacker:
+    <<: *base
+    container_name: 'code_fund_ads-webpacker'
+    image: code_fund_ads_base:latest
+    command: dockerize -wait http://bundler:23480 -wait http://yarn:23480 -timeout ${DEPENDENCY_TIMEOUT} bin/docker/start_docker_webpacker_server
+    ports:
+      - '3035:3035'
+
+  # Handles bundling prior to any dependent containers starting
+  bundler:
+    <<: *base
+    container_name: 'code_fund_ads-bundler'
+    image: code_fund_ads_base:latest
+    command: bin/docker/update_bundle
+
+  # Handles yarning prior to any dependent containers starting
+  yarn:
+    <<: *base
+    container_name: 'code_fund_ads-yarn'
+    image: code_fund_ads_base:latest
+    command: bin/docker/update_yarn
+
+  # Postgres
+  postgres:
+    image: postgres:11.3
+    shm_size: '256mb'
+    env_file: .env
+    environment:
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_USER=${PG_USERNAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+      - postgresconfig:/etc/postgresql
+      - postgreslog:/var/log/postgresql
+      - ./:/var/www/code_fund_ads
+
+  # Redis
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+# persists the data in case you destroy your container
+volumes:
+  bundle:
+  postgresdata:
+  postgresconfig:
+  postgreslog:
