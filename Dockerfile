@@ -41,9 +41,6 @@ RUN gem update --system
 # Install bundler 2.0.2,
 RUN gem install bundler:2.0.2
 
-# Update bundler to 2.0.2
-RUN bundle update --bundler
-
 # Build Development image
 FROM base as development
 
