@@ -12,11 +12,15 @@ RUN apt-get update -qq && apt-get install -y \
   imagemagick \
   libpq-dev \
   netcat \
-  nodejs \
   postgresql-client \
   postgresql-contrib \
   wget \
-  yarn
+  nodejs
+
+# Add Yarn
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+RUN apt-get update && apt-get install -y yarn
 
 # Add Dockerize
 RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
