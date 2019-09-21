@@ -14,6 +14,7 @@ services:
       - ./:/var/www/code_fund_ads
       - /var/www/code_fund_ads/tmp/
       - bundle:/usr/local/bundle
+      - node_modules:/var/www/code_fund_ads/node_modules
 
   # App container
   app:
