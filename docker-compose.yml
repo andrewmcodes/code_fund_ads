@@ -66,6 +66,7 @@ services:
 
   # Postgres
   postgres:
+    container_name: 'code_fund_ads-postgres'
     image: postgres:11.3
     shm_size: '256mb'
     env_file: .env
@@ -82,6 +83,7 @@ services:
 
   # Redis
   redis:
+    container_name: 'code_fund_ads-redis'
     image: redis:alpine
     ports:
       - "6379:6379"
@@ -92,3 +94,4 @@ volumes:
   postgresdata:
   postgresconfig:
   postgreslog:
+  yarn:
