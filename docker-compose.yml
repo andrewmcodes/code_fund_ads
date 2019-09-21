@@ -92,7 +92,7 @@ services:
 # persists the data in case you destroy your container
 volumes:
   bundle:
-  postgresdata:
+  node_modules:
   postgresconfig:
+  postgresdata:
   postgreslog:
-  yarn:
