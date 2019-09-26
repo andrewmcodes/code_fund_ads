@@ -15,6 +15,7 @@ services:
       - /var/www/code_fund_ads/tmp/
       - bundle:/usr/local/bundle
       - node_modules:/var/www/code_fund_ads/node_modules
+      - /dev/shm:/dev/shm
 
   # App container
   app:
@@ -69,6 +70,7 @@ services:
   postgres:
     container_name: 'code_fund_ads-postgres'
     image: postgres:11.3
+    command: postgres -c max_locks_per_transaction=1024
     shm_size: '256mb'
     env_file: .env
     environment:
@@ -88,6 +90,25 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+
+  # selenium
+  selenium-hub:
+    image: selenium/hub:3.141.59-vanadium
+    container_name: 'code_fund_ads-selenium-hub'
+    ports:
+      - "4444:4444"
+
+  # firefox
+  firefox:
+    image: selenium/node-firefox:3.141.59-vanadium
+    container_name: 'code_fund_ads-firefox'
+    volumes:
+      - /dev/shm:/dev/shm
+    depends_on:
+      - selenium-hub
+    environment:
+      - HUB_HOST=selenium-hub
+      - HUB_PORT=4444
 
 # persists the data in case you destroy your container
 volumes:

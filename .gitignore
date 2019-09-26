@@ -41,3 +41,4 @@ legacy
 lib/tasks/impressions.rake
 config/storage.yml
 config/database.yml
+/coverage/
