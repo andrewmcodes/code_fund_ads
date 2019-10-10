@@ -14,6 +14,8 @@ x-app_base: &x-app_base
   volumes:
     - app_assets:/app/public
     - app_gems:/app/vendor/cache
+    - app_modules:/app/node_modules
+    - app_tmp:/app/tmp
     - bundle:/usr/local/bundle
 
 services:
@@ -40,44 +42,24 @@ services:
       - redis
       - base
 
-  # App container
-  app:
+  test:
     <<: *x-app_base
     image: code_fund_ads_base:latest
     command: >
-      bash -c "bundle exec rails tmp:clear &&
-      bundle exec rails s -p 3000 -b 0.0.0.0"
-    ports:
-      - 3000:3000
+      bash -c "bundle exec rails db:create &&
+      bundle exec rails db:migrate &&
+      bundle exec rails test"
+    environment:
+      - NODE_ENV=test
+      - RAILS_ENV=test
+      - SELENIUM_HOST=selenium
+      - SELENIUM_PORT=4444
     depends_on:
       - migration
       - postgres
       - redis
       - base
-      # - webpacker
-
-  webpacker:
-    <<: *x-app_base
-    image: code_fund_ads_base:latest
-    command: >
-      bash -c "./bin/webpack-dev-server"
-    ports:
-      - '3035:3035'
-    depends_on:
-      - postgres
-      - redis
-      - base
-
-  sidekiq:
-    <<: *x-app_base
-    image: code_fund_ads_base:latest
-    command: bash -c 'bundle exec sidekiq'
-    environment:
-      - RAILS_ENV=test
-    depends_on:
-      - postgres
-      - redis
-      - base
+      - selenium
 
   # Postgres
   postgres:
@@ -116,16 +98,25 @@ services:
       # https://github.com/docker-library/redis/issues/35
       net.core.somaxconn: '511'
 
+  selenium:
+    image: selenium/standalone-chrome-debug:3.0.1-germanium
+    ports: ['4444:4444', '5900:5900']
+      # Bind selenium port & VNC port
+    logging:
+      driver: none
+      # Disable noisy logs.
+
 networks:
   external_network:
   internal_network:
     internal: true
 
 # persists the data in case you destroy your container
-# Don't share node_modules because some packages a post_install call that has different results if installed with MacOS or Linux
 volumes:
   app_assets:
   app_gems:
+  app_modules:
+  app_tmp:
   bundle:
   postgresconfig:
   postgresdata:
