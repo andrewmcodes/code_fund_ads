@@ -1,0 +1,52 @@
+name: Main
+on:
+  pull_request:
+    branches:
+      - '*'
+  push:
+    branches:
+      - master
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:11
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis
+        ports: ['6379:6379']
+        options: --entrypoint redis-server
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '2.6.5'
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '13.0.1'
+      - name: Install apt packages
+        run: sudo apt-get -yqq install libpq-dev
+      - name: Bundle Install
+        run: |
+          gem install bundler
+          bundle install --jobs 4 --retry 3
+      - name: Yarn
+        run: yarn
+      - name: Build and run tests
+        env:
+          DATABASE_URL: postgres://postgres:@localhost:5432/test
+          REDIS_URL: redis://localhost:6379/0
+          RAILS_ENV: test
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+        run: |
+          bundle exec rails db:prepare
+          bundle exec rails test
